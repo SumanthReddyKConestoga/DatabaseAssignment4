@@ -1,0 +1,17 @@
+---
+- name: 🔄 Teardown MySQL subscriber environment
+  hosts: localhost
+  connection: local
+  vars:
+    mysql_root_pw: rootpassword
+  tasks:
+    - name: Stop & remove MySQL container
+      community.docker.docker_container:
+        name: mysql_subscriber
+        state: absent
+        force_kill: yes
+    - name: Drop subscriber_db if exists
+      ansible.builtin.shell: |
+        MYSQL_PWD={{ mysql_root_pw }} \
+        mysql -h127.0.0.1 -u root -e "DROP DATABASE IF EXISTS subscriber_db;"
+      ignore_errors: yes

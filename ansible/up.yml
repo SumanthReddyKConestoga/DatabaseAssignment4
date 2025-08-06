@@ -1,0 +1,30 @@
+---
+- name: 🛠️ Scaffold new MySQL subscriber environment
+  hosts: localhost
+  connection: local
+  vars:
+    mysql_root_pw: rootpassword
+  tasks:
+    - name: Launch MySQL Docker container
+      community.docker.docker_container:
+        name: mysql_subscriber
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: "{{ mysql_root_pw }}"
+        state: started
+        ports:
+          - "3306:3306"
+    - name: Wait for MySQL readiness
+      wait_for:
+        host: 127.0.0.1
+        port: 3306
+        delay: 10
+    - name: Execute initial Flyway migrations
+      ansible.builtin.shell: |
+        flyway \
+          -url=jdbc:mysql://127.0.0.1:3306/ \
+          -user=root \
+          -password={{ mysql_root_pw }} \
+          -locations=filesystem:../flyway/initial_migrations migrate
+      args:
+        chdir: "{{ playbook_dir }}"
